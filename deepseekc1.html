@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>REELTIONSHIP · 关联测试生成六边形</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef2f9 0%, #d9e0ec 100%);
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            padding: 24px 20px 48px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.96);
+            border-radius: 48px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #1f2b4e;
+            color: white;
+            padding: 24px 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 1.6rem; margin-bottom: 6px; }
+        .header p { opacity: 0.8; font-size: 0.85rem; }
+
+        .content {
+            padding: 28px 22px 32px;
+        }
+
+        .panel {
+            transition: 0.2s;
+        }
+        .hidden {
+            display: none;
+        }
+
+        .question-card {
+            background: #f9fafc;
+            border-radius: 32px;
+            padding: 24px 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #eef2f8;
+        }
+        .main-question {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: #1a2a44;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #1f2b4e;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 60px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            transition: 0.1s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-secondary {
+            background: #7c8db0;
+            margin-top: 12px;
+        }
+
+        .sub-question {
+            background: white;
+            border-radius: 28px;
+            padding: 16px;
+            margin-bottom: 18px;
+            border: 1px solid #e2e8f0;
+        }
+        .sub-question-text {
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: #1f2b4e;
+        }
+        .rating {
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+        }
+        .rating-option {
+            flex: 1;
+            text-align: center;
+            background: #f0f2f8;
+            border-radius: 40px;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.1s;
+            color: #2c3e66;
+        }
+        .rating-option.selected {
+            background: #1f2b4e;
+            color: white;
+        }
+
+        .result-area {
+            margin-top: 28px;
+            background: #f0f4fa;
+            border-radius: 40px;
+            padding: 20px;
+            text-align: center;
+        }
+        canvas {
+            max-height: 260px;
+            width: 100%;
+            margin: 12px 0;
+        }
+        .animal {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2b4e;
+            margin: 8px 0;
+        }
+        .footer-note {
+            font-size: 0.7rem;
+            color: #7e8aa8;
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎲 REELTIONSHIP · 性格六边形</h1>
+        <p>随机抽题 → 关联测试 → 累积生成人格图谱</p>
+    </div>
+    <div class="content">
+        <!-- 抽题面板 -->
+        <div id="drawPanel" class="panel">
+            <div class="question-card">
+                <div class="main-question" id="mainQuestionDisplay">加载中…</div>
+                <button class="btn" id="startTestBtn">📋 开始相关测试</button>
+                <button class="btn btn-secondary" id="reshuffleBtn">🎲 换一题</button>
+            </div>
+            <div id="radarContainer" class="result-area">
+                <div style="font-weight:600;">📊 你的累积性格六边形</div>
+                <canvas id="radarChart" width="400" height="400"></canvas>
+                <div class="animal" id="animalLabel">—</div>
+                <div style="font-size:0.75rem; color:#4a5a7a;">每完成一组相关测试，六边形会更新</div>
+            </div>
+        </div>
+
+        <!-- 子测试面板 (初始隐藏) -->
+        <div id="testPanel" class="panel hidden">
+            <div class="question-card">
+                <div class="main-question" id="subMainQuestion"></div>
+                <div id="subQuestionsContainer"></div>
+                <button class="btn" id="submitSubBtn">✨ 提交并更新六边形</button>
+                <button class="btn btn-secondary" id="cancelSubBtn">← 返回抽题</button>
+            </div>
+        </div>
+    </div>
+    <div class="footer-note">
+        💡 每次抽到主问题后，会进入一组相关的子测试。你的所有答案会累积形成六边形人格图谱。
+    </div>
+</div>
+
+<script>
+    // ======================= 1. 主问题库 (你的30题) =======================
+    const mainQuestions = [
+        "與我們分享您認為永遠不會忘記的一天。快樂，傷痛，興奮，亦可以。",
+        "你在中學做的最有趣的活動是什麼？",
+        "你的性格由細到大有轉變嗎？",
+        "說出一首每次聽都會讓你哭的歌？",
+        "你是寧願事業上非常成功，私生活還可以忍受卻平淡無奇？還是相反？",
+        "你認為人們在看你時會自動對你有什麼第一印象？",
+        "你是否覺得很難說“不”，以至於你經常做你不想做的事？如果是這樣，為什麼？",
+        "你遇到過的最大的麻煩是什麼？",
+        "問你旁邊的人，他們認為你應該改變的一個習慣是什麼？",
+        "有一位老師曾經改變過你的人生嗎？",
+        "有什麼東西你一直很想放下卻又未做到？",
+        "你想要孩子嗎？為什麼或者為什麼不？",
+        "什麼書、電影或文章對你影響最大？",
+        "你在工作中遇到的最尷尬的事情是什麼？",
+        "你認識的最好的傾聽者是誰？每當你難過需要找人傾訴時，你會去找誰？",
+        "家人為你做過的最好的事是什麼？",
+        "分享一個你很沮喪但朋友能夠很好地安慰你的經歷嗎？他/她做了什麼讓你感覺更好？",
+        "你上一次完全專注在某件事上是什麼時候？",
+        "你有沒有遇到過讓你令人十分開心的陌生人？",
+        "你從父母那裡繼承的最好及最壞的特質是什麼？",
+        "和誰在一起、在哪裡或什麼讓你最快樂？",
+        "你認為自己內向還是外向的人？",
+        "如果你能改變成長過程中的一件事，會是哪一件？",
+        "你什麼時候覺得自己的生活過得很充實？你什麼時候覺得自己不是？",
+        "你喜歡現在的工作嗎？",
+        "你覺得自己最像父母中的哪一位，為什麼？",
+        "你最奇怪的地方是什麼？",
+        "你最喜歡的童年記憶是什麼？",
+        "你最喜歡什麼電視劇/卡通？為什麼？",
+        "你生命中最美好的事情是什麼？"
+    ];
+
+    // ======================= 2. 定义六个维度 =======================
+    const dimensions = ["openness", "empathy", "humor", "curiosity", "confidence", "playfulness"];
+    const dimLabels = {
+        openness: "开放性", empathy: "共情力", humor: "幽默感",
+        curiosity: "好奇心", confidence: "自信心", playfulness: "玩心"
+    };
+
+    // 累积数据: 每个维度的总分和答题次数
+    let dimensionTotals = {
+        openness: 0, empathy: 0, humor: 0, curiosity: 0, confidence: 0, playfulness: 0
+    };
+    let dimensionCounts = {
+        openness: 0, empathy: 0, humor: 0, curiosity: 0, confidence: 0, playfulness: 0
+    };
+
+    // ======================= 3. 定义每个主问题对应的子问题库 =======================
+    // 子问题格式: { text: "题目", dimension: "openness" }
+    // 注意: 这里仅为示例，你可以按照自己的设计修改或扩充。
+    // 目前为前6个主问题定义了真实相关的子问题，其余使用通用模板。
+    const subQuestionsMap = {};
+
+    // ---- 辅助函数：生成通用子问题（占位，可替换）----
+    function getGenericSubs(mainText) {
+        return [
+            { text: `关于「${mainText.substring(0, 20)}...」，你愿意分享的程度？`, dimension: "openness" },
+            { text: `这个话题让你感到与他人的连接感？`, dimension: "empathy" },
+            { text: `聊这个话题时，你是否感到轻松有趣？`, dimension: "humor" },
+            { text: `你好奇别人对这个问题的看法吗？`, dimension: "curiosity" },
+            { text: `你愿意在公开场合谈论这个话题吗？`, dimension: "confidence" },
+            { text: `你是否觉得这个问题有游戏感、可以玩起来？`, dimension: "playfulness" }
+        ];
+    }
+
+    // ---- 为具体主问题定制子问题 (示例：前6题) ----
+    subQuestionsMap[0] = [ // 永远不會忘記的一天
+        { text: "那一天的经历是否改变了你对生活的看法？", dimension: "openness" },
+        { text: "你愿意把这段故事分享给刚认识的朋友吗？", dimension: "confidence" },
+        { text: "回忆起那一天，你是否容易感受到当时的情感？", dimension: "empathy" },
+        { text: "你会用一种幽默的方式讲述这件往事吗？", dimension: "humor" }
+    ];
+    subQuestionsMap[1] = [ // 中學最有趣的活動
+        { text: "这个活动让你觉得自己更有创造力了吗？", dimension: "openness" },
+        { text: "你当时和朋友们的关系因此更紧密了吗？", dimension: "empathy" },
+        { text: "你是否认为中学时期的欢乐比现在多？", dimension: "playfulness" },
+        { text: "你会好奇别人中学时期的有趣活动吗？", dimension: "curiosity" }
+    ];
+    subQuestionsMap[2] = [ // 性格轉變
+        { text: "你觉得自己性格的变化是主动还是被动的？", dimension: "openness" },
+        { text: "你能够清晰描述自己性格转变的关键事件吗？", dimension: "confidence" },
+        { text: "性格转变让你更容易理解他人的处境了吗？", dimension: "empathy" },
+        { text: "你是否觉得现在的自己更有趣了？", dimension: "humor" }
+    ];
+    subQuestionsMap[3] = [ // 一首讓你哭的歌
+        { text: "你是否经常因为艺术作品（歌/电影）而感动？", dimension: "empathy" },
+        { text: "你会主动向朋友推荐这首让你哭的歌吗？", dimension: "confidence" },
+        { text: "你是否好奇这首歌背后创作者的故事？", dimension: "curiosity" },
+        { text: "你会用一种轻松的方式调侃自己的泪点吗？", dimension: "humor" }
+    ];
+    subQuestionsMap[4] = [ // 事業成功 vs 私生活平淡
+        { text: "你更喜欢规划长远的人生目标吗？", dimension: "openness" },
+        { text: "你是否愿意为了工作牺牲部分私人时间？", dimension: "confidence" },
+        { text: "你会和同事讨论这类人生抉择吗？", dimension: "curiosity" },
+        { text: "你觉得这个问题本身有点沉重还是有趣？", dimension: "playfulness" }
+    ];
+    subQuestionsMap[5] = [ // 人們對你的第一印象
+        { text: "你清楚别人对你的第一印象通常是什么吗？", dimension: "openness" },
+        { text: "你会在意别人对你的第一印象吗？", dimension: "confidence" },
+        { text: "你是否觉得第一印象往往很准确？", dimension: "curiosity" },
+        { text: "你会用幽默的方式打破别人对你的刻板印象吗？", dimension: "humor" }
+    ];
+
+    // 其余主问题使用通用子问题（你可以后续替换）
+    for (let i = 6; i < mainQuestions.length; i++) {
+        subQuestionsMap[i] = getGenericSubs(mainQuestions[i]);
+    }
+
+    // ======================= 4. 全局状态 =======================
+    let currentMainIndex = null;       // 当前抽到的主问题索引
+    let currentSubAnswers = [];         // 当前子问题的临时答案 (存储0-4, 对应1-5分)
+    let chartInstance = null;
+
+    // ======================= 5. 辅助函数 =======================
+    function getAverageScores() {
+        let avg = {};
+        for (let d of dimensions) {
+            let count = dimensionCounts[d];
+            avg[d] = count > 0 ? dimensionTotals[d] / count : 2.5; // 默认2.5
+        }
+        return avg;
+    }
+
+    function getPersonalityAnimal(scores) {
+        let entries = dimensions.map(d => ({ dim: d, score: scores[d] }));
+        entries.sort((a,b) => b.score - a.score);
+        const top = entries[0].dim;
+        const animalMap = {
+            openness: { name: "🦉 猫头鹰", desc: "深思熟虑，喜欢探索意义" },
+            empathy: { name: "🐘 大象", desc: "温柔体贴，善于倾听" },
+            humor: { name: "🐒 猴子", desc: "幽默风趣，气氛担当" },
+            curiosity: { name: "🐱 猫猫", desc: "好奇宝宝，热爱新鲜事物" },
+            confidence: { name: "🦁 狮子", desc: "自信果敢，天生领导者" },
+            playfulness: { name: "🐬 海豚", desc: "贪玩调皮，生活充满乐趣" }
+        };
+        if (top === "humor" && entries[1].score > 4) return { name: "🦊 小狐狸", desc: "机灵幽默，聚会灵魂" };
+        if (top === "empathy" && entries[1].dim === "openness") return { name: "🕊️ 白鸽", desc: "平和深邃，治愈他人" };
+        return animalMap[top] || { name: "✨ 独角兽", desc: "独特而平衡" };
+    }
+
+    function updateRadar() {
+        const scores = getAverageScores();
+        const ctx = document.getElementById("radarChart").getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: dimensions.map(d => dimLabels[d]),
+                datasets: [{
+                    label: '平均分 (1-5)',
+                    data: dimensions.map(d => scores[d]),
+                    backgroundColor: 'rgba(31, 43, 78, 0.2)',
+                    borderColor: '#1f2b4e',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#2c3e66',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: { r: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } } }
+            }
+        });
+        const animal = getPersonalityAnimal(scores);
+        document.getElementById("animalLabel").innerHTML = `${animal.name}<br><span style="font-size:0.7rem;">${animal.desc}</span>`;
+    }
+
+    // 随机抽题
+    function drawRandomQuestion() {
+        const newIndex = Math.floor(Math.random() * mainQuestions.length);
+        currentMainIndex = newIndex;
+        document.getElementById("mainQuestionDisplay").innerText = mainQuestions[newIndex];
+        // 重置子测试面板的显示（如果打开过）
+        document.getElementById("subMainQuestion").innerText = mainQuestions[newIndex];
+    }
+
+    // 渲染当前主问题对应的子问题表单
+    function renderSubQuestions() {
+        const container = document.getElementById("subQuestionsContainer");
+        const subs = subQuestionsMap[currentMainIndex];
+        if (!subs) return;
+        currentSubAnswers = new Array(subs.length).fill(2); // 默认3分 (索引0对应1分，所以值2对应3分)
+        container.innerHTML = "";
+        subs.forEach((sub, idx) => {
+            const div = document.createElement("div");
+            div.className = "sub-question";
+            div.innerHTML = `
+                <div class="sub-question-text">${sub.text}</div>
+                <div class="rating" data-idx="${idx}">
+                    ${[1,2,3,4,5].map(v => `<div class="rating-option" data-val="${v}">${v}</div>`).join('')}
+                </div>
+            `;
+            // 绑定评分事件
+            const options = div.querySelectorAll(".rating-option");
+            options.forEach(opt => {
+                opt.addEventListener("click", (e) => {
+                    const val = parseInt(opt.getAttribute("data-val"));
+                    currentSubAnswers[idx] = val - 1; // 存储0-4，方便后续转1-5
+                    options.forEach(o => o.classList.remove("selected"));
+                    opt.classList.add("selected");
+                });
+            });
+            // 默认高亮第3个（3分）
+            options[2].classList.add("selected");
+            container.appendChild(div);
+        });
+    }
+
+    // 提交子问题，更新累积数据
+    function submitSubAnswers() {
+        const subs = subQuestionsMap[currentMainIndex];
+        if (!subs) return;
+        for (let i = 0; i < subs.length; i++) {
+            const dim = subs[i].dimension;
+            const rawScore = currentSubAnswers[i] + 1; // 转为1-5分
+            dimensionTotals[dim] += rawScore;
+            dimensionCounts[dim] += 1;
+        }
+        updateRadar();
+        // 返回抽题面板
+        document.getElementById("drawPanel").classList.remove("hidden");
+        document.getElementById("testPanel").classList.add("hidden");
+        // 可选：刷新抽题面板的雷达显示
+    }
+
+    // 切换面板
+    function showTestPanel() {
+        if (currentMainIndex === null) drawRandomQuestion();
+        renderSubQuestions();
+        document.getElementById("drawPanel").classList.add("hidden");
+        document.getElementById("testPanel").classList.remove("hidden");
+    }
+    function showDrawPanel() {
+        document.getElementById("testPanel").classList.add("hidden");
+        document.getElementById("drawPanel").classList.remove("hidden");
+    }
+
+    // ======================= 6. 初始化与事件绑定 =======================
+    window.onload = () => {
+        drawRandomQuestion();
+        updateRadar();
+
+        document.getElementById("startTestBtn").addEventListener("click", showTestPanel);
+        document.getElementById("reshuffleBtn").addEventListener("click", () => {
+            drawRandomQuestion();
+        });
+        document.getElementById("submitSubBtn").addEventListener("click", submitSubAnswers);
+        document.getElementById("cancelSubBtn").addEventListener("click", showDrawPanel);
+    };
+</script>
+</body>
+</html>
